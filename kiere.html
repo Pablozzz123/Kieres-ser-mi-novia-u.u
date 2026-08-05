@@ -1,0 +1,318 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>¿Quieres ser mi novia?</title>
+<style>
+  :root{
+    --accent:#e91e63;
+    --bg1:#ff7eb3;
+    --bg2:#ffb6d9;
+    --card-bg:#fff;
+    --text:#333;
+    --success:#4CAF50;
+    --danger:#f44336;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html,body{height:100%;}
+
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2),#fff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:env(safe-area-inset);
+    min-height:100vh;
+    overflow:auto; /* allow scrolling on small viewports */
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  .cartel{
+    background:var(--card-bg);
+    width:100%;
+    max-width:420px;
+    padding:28px;
+    border-radius:18px;
+    text-align:center;
+    box-shadow:0 6px 24px rgba(0,0,0,.18);
+    position:relative; /* allow absolute positioning if needed */
+  }
+
+  h1{
+    color:var(--accent);
+    font-size:1.5rem;
+    line-height:1.2;
+    margin-bottom:8px;
+  }
+
+  /* gentle glow, disabled under reduced motion */
+  @media (prefers-reduced-motion: no-preference){
+    h1{animation:brillo 2s infinite;}
+    @keyframes brillo{
+      0%{text-shadow:0 0 6px #ff80ab;}
+      50%{text-shadow:0 0 26px #ff4081;}
+      100%{text-shadow:0 0 6px #ff80ab;}
+    }
+  }
+
+  p{margin:14px 0;font-size:1rem;color:var(--text);}
+
+  h2{color:var(--accent);font-size:1.125rem;margin-top:8px;}
+
+  .botones{
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:12px;
+    position:relative; /* keep as reference for absolute child if needed */
+    min-height:48px;
+  }
+
+  button{
+    padding:10px 18px;
+    font-size:1rem;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  button:focus{outline:3px solid rgba(233,30,99,.18); outline-offset:2px; box-shadow:0 6px 18px rgba(0,0,0,.12);} 
+  button:active{transform:translateY(1px);}
+
+  #si{
+    background:var(--success);
+    color:#fff;
+  }
+
+  /* El botón 'No' será movido dinámicamente por JS; por defecto permanece en el flujo
+     cuando se convierte en fijo, tendrá transiciones suaves. */
+  #no{
+    background:var(--danger);
+    color:#fff;
+    position:relative;
+    z-index:5;
+    transition: left .25s ease, top .25s ease, transform .18s ease;
+    touch-action:manipulation;
+  }
+
+  /* en lugar de mover el botón, una pequeña animación en hover/focus (respetando reduced-motion) */
+  @media (prefers-reduced-motion: no-preference){
+    #no:hover, #no:focus{
+      transform:translateY(-4px) rotate(-4deg);
+      box-shadow:0 8px 18px rgba(0,0,0,.14);
+    }
+  }
+
+  #mensaje{
+    margin-top:18px;
+    color:var(--accent);
+    font-size:1.05rem;
+    font-weight:700;
+    min-height:1.4em; /* evita salto de layout al mostrar el mensaje */
+  }
+
+  /* partículas decorativas (corazones/pétalos) */
+  .corazon,.petalo{
+    position:fixed;
+    top:-10vh;
+    pointer-events:none;
+    will-change:transform,opacity;
+    font-size:20px;
+    opacity:.95;
+    z-index:1;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .corazon,.petalo{animation:caer linear infinite;}
+    @keyframes caer{
+      to{transform:translateY(120vh) rotate(360deg); opacity:.6;}
+    }
+  }
+
+  /* small screens tweaks */
+  @media (max-width:420px){
+    .cartel{padding:20px;border-radius:14px;}
+    h1{font-size:1.25rem;}
+    p{font-size:.95rem;}
+    button{font-size:.95rem;padding:10px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<main class="cartel" role="main" aria-labelledby="titulo">
+  <h1 id="titulo">💖 ¿Quieres ser mi novia? 💖</h1>
+
+  <p>
+    Desde que llegaste a mi vida todo es más bonito. 🌹<br /><br />
+    Me haces muy feliz y quiero preguntarte algo muy importante...
+  </p>
+
+  <h2 style="color:var(--accent);">¿Aceptas ser mi novia? ❤️</h2>
+
+  <div class="botones" role="group" aria-label="Opciones de respuesta">
+    <button id="si" type="button" aria-label="Sí, acepto" >Sí ❤️</button>
+    <button id="no" type="button" aria-label="No, gracias">No 💔</button>
+  </div>
+
+  <div id="mensaje" aria-live="polite" aria-atomic="true"></div>
+</main>
+
+<script>
+/* Lógica de interacción:
+   - El botón "No" se evade cuando el usuario intenta interactuar con él por puntero/touch
+   - Se preserva la accesibilidad por teclado (no se evade con foco/teclado)
+   - Implementa límites para mantener el botón dentro de la ventana
+*/
+(function(){
+  const siBtn = document.getElementById('si');
+  const noBtn = document.getElementById('no');
+  const mensaje = document.getElementById('mensaje');
+
+  function acepto(){
+    mensaje.textContent = "🥰 ¡Gracias por aceptar! ❤️✨";
+    mensaje.focus?.();
+    lanzarCorazonesEfecto();
+  }
+
+  siBtn.addEventListener('click', acepto);
+  siBtn.addEventListener('keyup', (e)=>{ if(e.key === 'Enter' || e.key === ' ') acepto(); });
+
+  function rechazo(){
+    mensaje.textContent = "😅 Está bien, gracias por tu sinceridad.";
+  }
+  noBtn.addEventListener('click', rechazo);
+  // allow keyboard users to activate "No" with Enter/Space normally
+  noBtn.addEventListener('keyup', (e)=>{ if(e.key === 'Enter' || e.key === ' ') rechazo(); });
+
+  // Evitar movimiento si el usuario prefiere reducir movimiento
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduceMotion){
+    // Track how many times user tried to click to increase evasiveness
+    let attempts = 0;
+
+    function makeFixedIfNeeded(btn){
+      // If button is not fixed yet, convert its visual position to fixed coordinates to animate freely
+      const style = window.getComputedStyle(btn);
+      if(style.position === 'fixed') return; // already fixed
+
+      const rect = btn.getBoundingClientRect();
+      btn.style.position = 'fixed';
+      btn.style.left = `${rect.left}px`;
+      btn.style.top = `${rect.top}px`;
+      btn.style.margin = '0';
+      btn.style.transform = 'none';
+      // increase z so it stays above others
+      btn.style.zIndex = 9999;
+    }
+
+    function evade(e){
+      // Only respond to pointer/touch events, not keyboard events
+      if(e && e.type === 'keydown') return;
+      attempts = Math.min( attempts + 1, 8 );
+
+      // ensure fixed positioning so left/top work predictably
+      makeFixedIfNeeded(noBtn);
+
+      const rect = noBtn.getBoundingClientRect();
+      const btnW = rect.width;
+      const btnH = rect.height;
+
+      const margin = 8; // keep some margin from edges
+      const maxLeft = Math.max(window.innerWidth - btnW - margin, margin);
+      const maxTop = Math.max(window.innerHeight - btnH - margin, margin);
+
+      // pick a random target; make jumps larger with more attempts
+      const jitter = 40 + attempts * 30; // increases with attempts
+      let newLeft = Math.random() * (maxLeft - margin) + margin;
+      let newTop = Math.random() * (maxTop - margin) + margin;
+
+      // avoid placing too close to current position; if too close, nudge more
+      if(Math.abs(newLeft - rect.left) < jitter){
+        newLeft = (newLeft + jitter * (Math.random()<0.5 ? 1 : -1));
+        newLeft = Math.max(margin, Math.min(newLeft, maxLeft));
+      }
+      if(Math.abs(newTop - rect.top) < jitter){
+        newTop = (newTop + jitter * (Math.random()<0.5 ? 1 : -1));
+        newTop = Math.max(margin, Math.min(newTop, maxTop));
+      }
+
+      // apply the move with a small animation
+      noBtn.style.left = `${newLeft}px`;
+      noBtn.style.top = `${newTop}px`;
+
+      // Prevent the underlying click when pointerdown triggered (so it 'escapes')
+      if(e && (e.type === 'pointerdown' || e.type === 'touchstart')){
+        e.preventDefault();
+      }
+    }
+
+    // events that cause the button to escape: pointerenter (hover), pointerdown (click attempt), touchstart
+    noBtn.addEventListener('pointerenter', evade);
+    noBtn.addEventListener('pointerdown', evade, {passive:false});
+    noBtn.addEventListener('touchstart', evade, {passive:false});
+
+    // Optional: if window resizes, ensure the button remains in viewport
+    window.addEventListener('resize', ()=>{
+      if(window.getComputedStyle(noBtn).position !== 'fixed') return;
+      const rect = noBtn.getBoundingClientRect();
+      const btnW = rect.width, btnH = rect.height;
+      const maxLeft = Math.max(window.innerWidth - btnW - 8, 8);
+      const maxTop = Math.max(window.innerHeight - btnH - 8, 8);
+      let left = parseFloat(noBtn.style.left) || rect.left;
+      let top = parseFloat(noBtn.style.top) || rect.top;
+      left = Math.max(8, Math.min(left, maxLeft));
+      top = Math.max(8, Math.min(top, maxTop));
+      noBtn.style.left = `${left}px`;
+      noBtn.style.top = `${top}px`;
+    });
+  }
+
+  // Partículas decorativas (opcional). Se desactivan si el usuario prefiere reducir movimiento o en pantallas pequeñas.
+  const smallScreen = window.matchMedia('(max-width:600px)').matches;
+
+  function crear(simbolo, clase){
+    const e = document.createElement('div');
+    e.className = clase;
+    e.setAttribute('aria-hidden','true'); // decorativo
+    e.innerHTML = simbolo;
+    const left = Math.random() * (window.innerWidth - 40);
+    e.style.left = `${left}px`;
+    const dur = (Math.random()*6 + 4).toFixed(2);
+    e.style.animationDuration = `${dur}s`;
+    e.style.fontSize = `${Math.random()*(26-14)+14}px`;
+    document.body.appendChild(e);
+    setTimeout(()=>{ e.remove(); }, (parseFloat(dur)+1)*1000);
+  }
+
+  let corInterval = null, petInterval = null;
+  function startParticles(){
+    if(reduceMotion || smallScreen) return;
+    corInterval = setInterval(()=>crear('❤️','corazon'), 350);
+    petInterval = setInterval(()=>crear('🌸','petalo'), 600);
+  }
+  function stopParticles(){
+    if(corInterval) clearInterval(corInterval);
+    if(petInterval) clearInterval(petInterval);
+  }
+
+  function lanzarCorazonesEfecto(){
+    if(reduceMotion) return;
+    for(let i=0;i<40;i++){
+      setTimeout(()=>crear('💖','corazon'), i*60);
+    }
+  }
+
+  // iniciar partículas si procede
+  startParticles();
+  window.addEventListener('pagehide', stopParticles);
+})();
+</script>
+</body>
+</html>
